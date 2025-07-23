@@ -22,7 +22,7 @@ export default function landing() {
                 Login
               </Button>
             </Link>
-            <Link href="/login">
+            <Link href="/signup">
               <Button className="bg-teal-600 hover:bg-teal-700 text-white" style={{ backgroundColor: "#118C8C" }}>
                 Sign Up
               </Button>
