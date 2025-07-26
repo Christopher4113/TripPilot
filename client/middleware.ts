@@ -35,6 +35,9 @@ export const config = {
         '/landing',     
         '/login',       
         '/signup',
-        '/menu'      
+        '/menu',
+        '/create',
+        '/saved',
+        '/profile',      
     ]
 };
