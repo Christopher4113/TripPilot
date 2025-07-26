@@ -4,10 +4,20 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Plane, Plus, BookmarkCheck, User, LogOut } from "lucide-react"
 import Link from "next/link"
+import { useRouter } from 'next/navigation';
 
 const Page = () => {
+  const router = useRouter();
   const { data: session, status } = useSession()
-
+  const handleSelect = (value: string) => {
+    if (value === "create") {
+      router.push("/create");
+    } else if (value === "saved") {
+      router.push("/saved");
+    } else if (value === "profile") {
+      router.push("/profile");
+    }
+  }
   if (status === "loading") {
     return (
       <div className="min-h-screen bg-gradient-to-br from-white to-gray-50 flex items-center justify-center">
@@ -98,7 +108,7 @@ const Page = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="text-center">
-              <Button
+              <Button onClick={() => handleSelect("create")}
                 className="w-full text-white font-medium py-3 transition-all duration-200"
                 style={{ backgroundColor: "#118C8C" }}
               >
@@ -124,6 +134,7 @@ const Page = () => {
             </CardHeader>
             <CardContent className="text-center">
               <Button
+                onClick={() => handleSelect("saved")}
                 variant="outline"
                 className="w-full border-teal-600 text-teal-600 hover:bg-teal-600 hover:text-white font-medium py-3 transition-all duration-200 bg-transparent"
                 style={{ borderColor: "#118C8C", color: "#118C8C" }}
@@ -150,6 +161,7 @@ const Page = () => {
             </CardHeader>
             <CardContent className="text-center">
               <Button
+                onClick={() => handleSelect("profile")}
                 variant="outline"
                 className="w-full border-teal-600 text-teal-600 hover:bg-teal-600 hover:text-white font-medium py-3 transition-all duration-200 bg-transparent"
                 style={{ borderColor: "#118C8C", color: "#118C8C" }}
