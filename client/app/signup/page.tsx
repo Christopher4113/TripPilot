@@ -1,7 +1,5 @@
 "use client"
-
 import type React from "react"
-
 import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -13,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Separator } from "@/components/ui/separator"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { signIn } from "next-auth/react"
-import { Heart, User, Mail, Lock, Eye, EyeOff, AlertCircle, CheckCircle } from "lucide-react"
+import { Plane, User, Mail, Lock, Eye, EyeOff, AlertCircle, CheckCircle } from "lucide-react"
 
 const Page = () => {
   const router = useRouter()
@@ -53,7 +51,6 @@ const Page = () => {
     }
 
     setIsLoading(true)
-
     try {
       const response = await axios.post("/api/users/signup", user)
       console.log("Signup success", response.data)
@@ -90,24 +87,27 @@ const Page = () => {
   const passwordStrength = getPasswordStrength(user.password)
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#F0E8FA] to-[#FAF3DC] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-white to-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="w-full max-w-md">
         {/* Logo/Brand Header */}
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center justify-center mb-4">
-            <div className="bg-white/20 backdrop-blur-sm rounded-full p-3 shadow-lg">
-              <Heart className="h-8 w-8 text-purple-600" />
+            <div
+              className="bg-white/20 backdrop-blur-sm rounded-full p-3 shadow-lg"
+              style={{ backgroundColor: "rgba(17, 140, 140, 0.1)" }}
+            >
+              <Plane className="h-8 w-8" style={{ color: "#118C8C" }} />
             </div>
           </Link>
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">Welcome to MindMate</h1>
-          <p className="text-gray-600">Start your mental wellness journey today</p>
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">Welcome to TripPilot</h1>
+          <p className="text-gray-600">Start planning your perfect trip with AI</p>
         </div>
 
-        <Card className="bg-white/60 backdrop-blur-sm border-white/50 shadow-2xl">
+        <Card className="bg-white/80 backdrop-blur-sm border-gray-200 shadow-2xl">
           <CardHeader className="space-y-1 pb-6">
             <CardTitle className="text-2xl font-bold text-center text-gray-800">Create Account</CardTitle>
             <CardDescription className="text-center text-gray-600">
-              Join thousands on their path to better mental health
+              Join thousands of travelers planning amazing trips
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -117,7 +117,6 @@ const Page = () => {
                 <AlertDescription className="text-red-700">{error}</AlertDescription>
               </Alert>
             )}
-
             {success && (
               <Alert className="border-green-200 bg-green-50/80 backdrop-blur-sm">
                 <CheckCircle className="h-4 w-4 text-green-600" />
@@ -139,7 +138,8 @@ const Page = () => {
                     required
                     value={user.username}
                     onChange={(e) => setUser({ ...user, username: e.target.value })}
-                    className="pl-10 bg-white/70 backdrop-blur-sm border-white/50 focus:border-purple-300 focus:ring-purple-200"
+                    className="pl-10 bg-white/70 backdrop-blur-sm border-gray-300 focus:border-teal-500 focus:ring-teal-200"
+                    // Removed invalid style property
                   />
                 </div>
               </div>
@@ -157,7 +157,7 @@ const Page = () => {
                     required
                     value={user.email}
                     onChange={(e) => setUser({ ...user, email: e.target.value })}
-                    className="pl-10 bg-white/70 backdrop-blur-sm border-white/50 focus:border-purple-300 focus:ring-purple-200"
+                    className="pl-10 bg-white/70 backdrop-blur-sm border-gray-300 focus:border-teal-500 focus:ring-teal-200"
                   />
                 </div>
               </div>
@@ -175,7 +175,7 @@ const Page = () => {
                     required
                     value={user.password}
                     onChange={(e) => setUser({ ...user, password: e.target.value })}
-                    className="pl-10 pr-10 bg-white/70 backdrop-blur-sm border-white/50 focus:border-purple-300 focus:ring-purple-200"
+                    className="pl-10 pr-10 bg-white/70 backdrop-blur-sm border-gray-300 focus:border-teal-500 focus:ring-teal-200"
                   />
                   <button
                     type="button"
@@ -195,7 +195,8 @@ const Page = () => {
 
               <Button
                 type="submit"
-                className="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium py-2.5 transition-all duration-200 shadow-lg hover:shadow-xl"
+                className="w-full text-white font-medium py-2.5 transition-all duration-200 shadow-lg hover:shadow-xl"
+                style={{ backgroundColor: "#118C8C" }}
                 disabled={isLoading}
               >
                 {isLoading ? (
@@ -211,18 +212,16 @@ const Page = () => {
 
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
-                <Separator className="w-full bg-white/30" />
+                <Separator className="w-full bg-gray-300" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-white/60 backdrop-blur-sm px-3 py-1 text-gray-500 rounded-full">
-                  Or continue with
-                </span>
+                <span className="bg-white px-3 py-1 text-gray-500 rounded-full">Or continue with</span>
               </div>
             </div>
 
             <Button
               variant="outline"
-              className="w-full bg-white/70 backdrop-blur-sm border-white/50 hover:bg-white/80 transition-all duration-200"
+              className="w-full bg-white/70 backdrop-blur-sm border-gray-300 hover:bg-gray-50 transition-all duration-200"
               onClick={handleGoogle}
               disabled={isLoading}
             >
@@ -252,21 +251,22 @@ const Page = () => {
                 Already have an account?{" "}
                 <Link
                   href="/login"
-                  className="text-purple-600 hover:text-purple-700 font-medium hover:underline transition-colors"
+                  className="font-medium hover:underline transition-colors"
+                  style={{ color: "#118C8C" }}
                 >
                   Sign In
                 </Link>
               </p>
             </div>
 
-            <div className="text-center pt-4 border-t border-white/30">
+            <div className="text-center pt-4 border-t border-gray-200">
               <p className="text-xs text-gray-500">
                 By creating an account, you agree to our{" "}
-                <Link href="/terms" className="text-purple-600 hover:underline">
+                <Link href="/terms" className="hover:underline" style={{ color: "#118C8C" }}>
                   Terms of Service
                 </Link>{" "}
                 and{" "}
-                <Link href="/privacy" className="text-purple-600 hover:underline">
+                <Link href="/privacy" className="hover:underline" style={{ color: "#118C8C" }}>
                   Privacy Policy
                 </Link>
               </p>
@@ -277,7 +277,7 @@ const Page = () => {
         <div className="text-center mt-6">
           <p className="text-sm text-gray-600">
             Need help?{" "}
-            <Link href="/support" className="text-purple-600 hover:text-purple-700 font-medium hover:underline">
+            <Link href="/support" className="font-medium hover:underline" style={{ color: "#118C8C" }}>
               Contact Support
             </Link>
           </p>
