@@ -1,47 +1,218 @@
 "use client"
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useSession, signOut } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Plane, LogOut, Menu, Send, User, Bot } from "lucide-react"
 import Link from "next/link"
 
+interface Trip {
+  destination: string
+  budget: string
+  startDate: string
+  endDate: string
+  travelers: string
+  accessibility: string
+  interests: string
+  notes: string
+}
+
+const steps = [
+  { field: "destination", prompt: "Where would you like to go?" },
+  { field: "budget", prompt: "What's your budget for this trip?" },
+  { field: "startDate", prompt: "When will the trip start? (YYYY-MM-DD)" },
+  { field: "endDate", prompt: "When will the trip end? (YYYY-MM-DD)" },
+  { field: "travelers", prompt: "How many people are traveling?" },
+  { field: "accessibility", prompt: "Do you have any accessibility needs?" },
+  { field: "interests", prompt: "What type of activities or experiences interest you?" },
+  { field: "notes", prompt: "Any additional notes or preferences?" },
+]
+
 const Page = () => {
   const { status } = useSession()
+  const messagesEndRef = useRef<HTMLDivElement | null>(null)
+  const inputRef = useRef<HTMLInputElement | null>(null)
+
+  const [stepIndex, setStepIndex] = useState(0)
+  const [tripData, setTripData] = useState<Trip>({
+    destination: "",
+    budget: "",
+    startDate: "",
+    endDate: "",
+    travelers: "",
+    accessibility: "",
+    interests: "",
+    notes: "",
+  })
+  const [currentTrips, setCurrentTrips] = useState<Trip[]>([])
   const [messages, setMessages] = useState([
     {
       id: 1,
       type: "bot",
-      content:
-        "Hello! I'm your TripPilot AI assistant. I'm here to help you plan the perfect trip. Where would you like to go, or what kind of adventure are you looking for?",
+      content: "Hello! I'm your TripPilot AI assistant. I'm here to help you plan the perfect trip.",
       timestamp: new Date(),
     },
   ])
   const [inputMessage, setInputMessage] = useState("")
   const [isTyping, setIsTyping] = useState(false)
+  const hasShownInitialPromptRef = useRef(false)
+
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" })
+    }
+  }, [messages])
+
+  // Fixed useEffect to prevent duplicate messages using ref
+  useEffect(() => {
+    if (
+      status === "authenticated" &&
+      !hasShownInitialPromptRef.current &&
+      stepIndex === 0 &&
+      messages.length === 1
+    ) {
+      hasShownInitialPromptRef.current = true
+      setTimeout(() => {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: prev.length + 1,
+            type: "bot",
+            content: steps[0].prompt,
+            timestamp: new Date(),
+          },
+        ])
+      }, 500)
+    }
+  }, [status, stepIndex, messages.length])
+
+  const handleSendMessage = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!inputMessage.trim()) return
+
+    const userMessage = {
+      id: messages.length + 1,
+      type: "user",
+      content: inputMessage,
+      timestamp: new Date(),
+    }
+
+    setMessages((prev) => [...prev, userMessage])
+
+    const currentStep = steps[stepIndex]
+    if (currentStep) {
+      setTripData((prev) => ({ ...prev, [currentStep.field]: inputMessage }))
+    }
+
+    setInputMessage("")
+    setIsTyping(true)
+
+    // Focus the input after a short delay to ensure it's ready
+    setTimeout(() => {
+      inputRef.current?.focus()
+    }, 100)
+
+    setTimeout(() => {
+      setIsTyping(false)
+      if (stepIndex < steps.length - 1) {
+        const botMessage = {
+          id: messages.length + 2,
+          type: "bot",
+          content: steps[stepIndex + 1].prompt,
+          timestamp: new Date(),
+        }
+        setMessages((prev) => [...prev, botMessage])
+        setStepIndex((prev) => prev + 1)
+        
+        // Focus input after bot response
+        setTimeout(() => {
+          inputRef.current?.focus()
+        }, 200)
+      } else {
+        const botMessage = {
+          id: messages.length + 2,
+          type: "bot",
+          content: "Got all the details! Would you like to submit this trip or add another one?",
+          timestamp: new Date(),
+        }
+        setMessages((prev) => [...prev, botMessage])
+      }
+    }, 1000)
+  }
+
+  const handleAddAnotherTrip = () => {
+    setCurrentTrips((prev) => [...prev, tripData])
+    setTripData({
+      destination: "",
+      budget: "",
+      startDate: "",
+      endDate: "",
+      travelers: "",
+      accessibility: "",
+      interests: "",
+      notes: "",
+    })
+    setStepIndex(0)
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: prev.length + 1,
+        type: "bot",
+        content: steps[0].prompt,
+        timestamp: new Date(),
+      },
+    ])
+    
+    // Focus input for new trip
+    setTimeout(() => {
+      inputRef.current?.focus()
+    }, 200)
+  }
+
+  const handleSubmitAllTrips = () => {
+    const allTrips = [...currentTrips, tripData]
+    console.log("Submitting trips:", allTrips)
+
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: prev.length + 1,
+        type: "bot",
+        content: "Thanks! Your trip(s) have been submitted successfully 🚀",
+        timestamp: new Date(),
+      },
+    ])
+    setTripData({
+      destination: "",
+      budget: "",
+      startDate: "",
+      endDate: "",
+      travelers: "",
+      accessibility: "",
+      interests: "",
+      notes: "",
+    })
+    setCurrentTrips([])
+    setStepIndex(0)
+    hasShownInitialPromptRef.current = false // Reset to allow new trip planning
+  }
 
   if (status === "loading") {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-white to-gray-50 flex items-center justify-center">
-        <div className="flex items-center gap-2">
-          <div
-            className="w-6 h-6 border-2 border-gray-300 border-t-teal-600 rounded-full animate-spin"
-            style={{ borderTopColor: "#118C8C" }}
-          ></div>
-          <p className="text-gray-600">Loading...</p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center">
+        <p>Loading...</p>
       </div>
     )
   }
 
   if (status === "unauthenticated") {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-white to-gray-50 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <Plane className="h-16 w-16 mx-auto mb-4" style={{ color: "#118C8C" }} />
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">Access Required</h2>
-          <p className="text-gray-600 mb-6">Please login to see your TripPilot dashboard</p>
+          <h2 className="text-2xl font-bold">Access Required</h2>
+          <p className="mb-4">Please login to access your TripPilot dashboard.</p>
           <Link href="/login">
             <Button className="text-white" style={{ backgroundColor: "#118C8C" }}>
               Go to Login
@@ -52,178 +223,111 @@ const Page = () => {
     )
   }
 
-  const handleSendMessage = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!inputMessage.trim()) return
-
-    // Add user message
-    const userMessage = {
-      id: messages.length + 1,
-      type: "user",
-      content: inputMessage,
-      timestamp: new Date(),
-    }
-
-    setMessages((prev) => [...prev, userMessage])
-    setInputMessage("")
-    setIsTyping(true)
-
-    // Simulate AI response (replace with actual AI integration later)
-    setTimeout(() => {
-      const botMessage = {
-        id: messages.length + 2,
-        type: "bot",
-        content:
-          "That sounds like an amazing destination! Let me help you plan this trip. I'll need a few more details to create the perfect itinerary for you. What's your budget range and how many days are you planning to travel?",
-        timestamp: new Date(),
-      }
-      setMessages((prev) => [...prev, botMessage])
-      setIsTyping(false)
-    }, 2000)
-  }
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-white to-gray-50 flex flex-col">
-      {/* Header */}
-      <header className="bg-white/80 backdrop-blur-sm border-b border-gray-200 shadow-sm">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <Plane className="h-8 w-8" style={{ color: "#118C8C" }} />
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">Create New Trip</h1>
-                <p className="text-sm text-gray-600">Plan your perfect adventure with AI</p>
-              </div>
+      <header className="bg-white/80 border-b px-4 py-4 shadow-sm">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-3">
+            <Plane className="h-8 w-8 text-[#118C8C]" />
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Create New Trip</h1>
+              <p className="text-sm text-gray-600">Plan your perfect adventure with AI</p>
             </div>
-            <div className="flex items-center space-x-4">
-              <Link href="/menu">
-                <Button
-                  variant="outline"
-                  className="border-teal-600 text-teal-600 hover:bg-teal-600 hover:text-white bg-transparent"
-                  style={{ borderColor: "#118C8C", color: "#118C8C" }}
-                >
-                  <Menu className="h-4 w-4 mr-2" />
-                  Menu
-                </Button>
-              </Link>
-              <Button
-                variant="outline"
-                onClick={() => signOut()}
-                className="border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400"
-              >
-                <LogOut className="h-4 w-4 mr-2" />
-                Sign Out
+          </div>
+          <div className="flex items-center gap-3">
+            <Link href="/menu">
+              <Button variant="outline" style={{ color: "#118C8C", borderColor: "#118C8C" }}>
+                <Menu className="h-4 w-4 mr-1" />
+                Menu
               </Button>
-            </div>
+            </Link>
+            <Button variant="outline" onClick={() => signOut()} className="text-red-600">
+              <LogOut className="h-4 w-4 mr-1" />
+              Sign Out
+            </Button>
           </div>
         </div>
       </header>
 
-      {/* Chat Interface */}
-      <div className="flex-1 container mx-auto px-4 py-6 flex flex-col max-w-4xl">
-        {/* Messages Container */}
-        <div className="flex-1 bg-white/60 backdrop-blur-sm rounded-lg border border-gray-200 shadow-lg mb-4 flex flex-col">
-          {/* Chat Header */}
-          <div className="p-4 border-b border-gray-200">
-            <div className="flex items-center gap-3">
-              <div
-                className="w-10 h-10 rounded-full flex items-center justify-center"
-                style={{ backgroundColor: "rgba(17, 140, 140, 0.1)" }}
-              >
-                <Bot className="h-5 w-5" style={{ color: "#118C8C" }} />
-              </div>
-              <div>
-                <h3 className="font-semibold text-gray-900">TripPilot AI Assistant</h3>
-                <p className="text-sm text-gray-600">Online • Ready to help plan your trip</p>
+      <main className="flex-1 container max-w-4xl mx-auto px-4 py-6">
+        <div className="bg-white/60 border rounded-lg shadow-lg p-4 space-y-4 min-h-[400px] max-h-[500px] overflow-y-auto">
+          {messages.map((msg) => (
+            <div key={msg.id} className={`flex ${msg.type === "user" ? "justify-end" : "justify-start"}`}>
+              <div className={`flex items-start gap-3 max-w-[80%] ${msg.type === "user" ? "flex-row-reverse" : ""}`}>
+                {/* Avatar with lucide icon */}
+                <div className="flex-shrink-0">
+                  {msg.type === "bot" ? (
+                    <div className="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center">
+                      <Bot className="text-teal-600 w-5 h-5" />
+                    </div>
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center">
+                      <User className="text-gray-700 w-5 h-5" />
+                    </div>
+                  )}
+                </div>
+
+                {/* Bubble */}
+                <div
+                  className={`rounded-lg p-3 shadow-sm ${
+                    msg.type === "user"
+                      ? "bg-[#118C8C] text-white"
+                      : "bg-gray-50 text-gray-900 border border-gray-200"
+                  }`}
+                >
+                  <p className="text-sm">{msg.content}</p>
+                  <p className="text-xs mt-1 opacity-60">
+                    {msg.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
-
-          {/* Messages */}
-          <div className="flex-1 p-4 overflow-y-auto space-y-4 min-h-[400px] max-h-[500px]">
-            {messages.map((message) => (
-              <div key={message.id} className={`flex ${message.type === "user" ? "justify-end" : "justify-start"}`}>
-                <div
-                  className={`flex items-start gap-3 max-w-[80%] ${message.type === "user" ? "flex-row-reverse" : ""}`}
-                >
-                  <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                      message.type === "user" ? "bg-gray-200" : ""
-                    }`}
-                    style={message.type === "bot" ? { backgroundColor: "rgba(17, 140, 140, 0.1)" } : {}}
-                  >
-                    {message.type === "user" ? (
-                      <User className="h-4 w-4 text-gray-600" />
-                    ) : (
-                      <Bot className="h-4 w-4" style={{ color: "#118C8C" }} />
-                    )}
-                  </div>
-                  <div
-                    className={`rounded-lg p-3 ${message.type === "user" ? "text-white" : "bg-gray-50 text-gray-900"}`}
-                    style={message.type === "user" ? { backgroundColor: "#118C8C" } : {}}
-                  >
-                    <p className="text-sm">{message.content}</p>
-                    <p className={`text-xs mt-1 ${message.type === "user" ? "text-white/70" : "text-gray-500"}`}>
-                      {message.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                    </p>
-                  </div>
-                </div>
+          ))}
+          <div ref={messagesEndRef} />
+          {isTyping && (
+            <div className="flex items-center gap-2">
+              <div className="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center">
+                <Bot className="text-teal-600 w-5 h-5" />
               </div>
-            ))}
-
-            {/* Typing Indicator */}
-            {isTyping && (
-              <div className="flex justify-start">
-                <div className="flex items-start gap-3 max-w-[80%]">
-                  <div
-                    className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
-                    style={{ backgroundColor: "rgba(17, 140, 140, 0.1)" }}
-                  >
-                    <Bot className="h-4 w-4" style={{ color: "#118C8C" }} />
-                  </div>
-                  <div className="bg-gray-50 rounded-lg p-3">
-                    <div className="flex space-x-1">
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                      <div
-                        className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                        style={{ animationDelay: "0.1s" }}
-                      ></div>
-                      <div
-                        className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                        style={{ animationDelay: "0.2s" }}
-                      ></div>
-                    </div>
-                  </div>
-                </div>
+              <div className="bg-gray-100 p-3 rounded-lg flex gap-1">
+                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-100"></div>
+                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-200"></div>
               </div>
-            )}
-          </div>
-
-          {/* Input Form */}
-          <div className="p-4 border-t border-gray-200">
-            <form onSubmit={handleSendMessage} className="flex gap-2">
-              <Input
-                value={inputMessage}
-                onChange={(e) => setInputMessage(e.target.value)}
-                placeholder="Tell me about your dream trip..."
-                className="flex-1 bg-white/70 backdrop-blur-sm border-gray-300 focus:border-teal-500 focus:ring-teal-200"
-                disabled={isTyping}
-              />
-              <Button
-                type="submit"
-                className="text-white px-4"
-                style={{ backgroundColor: "#118C8C" }}
-                disabled={isTyping || !inputMessage.trim()}
-              >
-                <Send className="h-4 w-4" />
-              </Button>
-            </form>
-            <p className="text-xs text-gray-500 mt-2">
-              Ask me about destinations, activities, budgets, or anything travel-related!
-            </p>
-          </div>
+            </div>
+          )}
         </div>
-      </div>
+
+        {/* Input form */}
+        <form onSubmit={handleSendMessage} className="mt-4 flex gap-2">
+          <Input
+            ref={inputRef}
+            value={inputMessage}
+            onChange={(e) => setInputMessage(e.target.value)}
+            placeholder="Tell me about your dream trip..."
+            disabled={isTyping}
+          />
+          <Button
+            type="submit"
+            disabled={isTyping || !inputMessage.trim()}
+            className="text-white"
+            style={{ backgroundColor: "#118C8C" }}
+          >
+            <Send className="h-4 w-4" />
+          </Button>
+        </form>
+
+        {stepIndex === steps.length - 1 && !isTyping && (
+          <div className="mt-4 flex gap-2">
+            <Button onClick={handleAddAnotherTrip} className="bg-teal-600 text-white">
+              Add Another Trip
+            </Button>
+            <Button variant="outline" onClick={handleSubmitAllTrips}>
+              Submit All Trips
+            </Button>
+          </div>
+        )}
+      </main>
     </div>
   )
 }
