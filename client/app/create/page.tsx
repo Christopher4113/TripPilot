@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Plane, LogOut, Menu, Send, User, Bot } from "lucide-react"
 import Link from "next/link"
+import axios from "axios"
 
 interface Trip {
   destination: string
@@ -56,6 +57,7 @@ const Page = () => {
   ])
   const [inputMessage, setInputMessage] = useState("")
   const [isTyping, setIsTyping] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const hasShownInitialPromptRef = useRef(false)
 
   useEffect(() => {
@@ -170,32 +172,54 @@ const Page = () => {
     }, 200)
   }
 
-  const handleSubmitAllTrips = () => {
+  const handleSubmitAllTrips = async () => {
     const allTrips = [...currentTrips, tripData]
-    console.log("Submitting trips:", allTrips)
+    setIsSubmitting(true)
 
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: prev.length + 1,
-        type: "bot",
-        content: "Thanks! Your trip(s) have been submitted successfully 🚀",
-        timestamp: new Date(),
-      },
-    ])
-    setTripData({
-      destination: "",
-      budget: "",
-      startDate: "",
-      endDate: "",
-      travelers: "",
-      accessibility: "",
-      interests: "",
-      notes: "",
-    })
-    setCurrentTrips([])
-    setStepIndex(0)
-    hasShownInitialPromptRef.current = false // Reset to allow new trip planning
+    try {
+      const response = await axios.post('http://localhost:8000', {
+        trips: allTrips
+      })
+
+      console.log("Trips submitted successfully:", response.data)
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: prev.length + 1,
+          type: "bot",
+          content: "Thanks! Your trip(s) have been submitted successfully 🚀",
+          timestamp: new Date(),
+        },
+      ])
+    } catch (error) {
+      console.error("Error submitting trips:", error)
+      
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: prev.length + 1,
+          type: "bot",
+          content: "Sorry, there was an error submitting your trip(s). Please try again later. ❌",
+          timestamp: new Date(),
+        },
+      ])
+    } finally {
+      setIsSubmitting(false)
+      setTripData({
+        destination: "",
+        budget: "",
+        startDate: "",
+        endDate: "",
+        travelers: "",
+        accessibility: "",
+        interests: "",
+        notes: "",
+      })
+      setCurrentTrips([])
+      setStepIndex(0)
+      hasShownInitialPromptRef.current = false // Reset to allow new trip planning
+    }
   }
 
   if (status === "loading") {
@@ -322,8 +346,12 @@ const Page = () => {
             <Button onClick={handleAddAnotherTrip} className="bg-teal-600 text-white">
               Add Another Trip
             </Button>
-            <Button variant="outline" onClick={handleSubmitAllTrips}>
-              Submit All Trips
+            <Button 
+              variant="outline" 
+              onClick={handleSubmitAllTrips}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "Submitting..." : "Submit All Trips"}
             </Button>
           </div>
         )}
