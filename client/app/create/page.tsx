@@ -1,7 +1,7 @@
 "use client"
 import type React from "react"
 import { useState, useEffect, useRef } from "react"
-import { useSession, signOut } from "next-auth/react"
+import { useSession, signOut, getSession } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Plane, LogOut, Menu, Send, User, Bot } from "lucide-react"
@@ -177,6 +177,30 @@ const Page = () => {
     setIsSubmitting(true)
 
     try {
+      const session = await getSession()
+      // @ts-expect-error: accessToken is a custom property added to the session
+      const token = session?.user?.accessToken;
+
+      if (!token) {
+        throw new Error("Authentication token not found");
+      }
+
+      // Step 1: Check if user exists in Pinecone
+      const checkRes = await axios.get('http://localhost:8000/check_user_exists', {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      })
+
+      // Step 2: Register user if needed
+      if (!checkRes.data?.exists) {
+        await axios.post('http://localhost:8000/register_pinecone_user', {}, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        })
+      }
+
       const response = await axios.post('http://localhost:8000', {
         trips: allTrips
       })

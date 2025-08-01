@@ -1,6 +1,6 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, HTTPException
 from helpers.extractToken import get_current_user
-from database.pinecone import add_user_pinecone
+from database.pinecone import add_user_pinecone, index
 
 app = FastAPI()
 
@@ -26,3 +26,13 @@ def register_user_in_pinecone(current_user: dict = Depends(get_current_user)):
 
     add_user_pinecone(user_id=user_id, username=username, text=default_text)
     return {"message": f"User {username} registered in Pinecone with ID {user_id}"}
+
+@app.get("/check_user_exists")
+def check_user_exists(current_user: dict = Depends(get_current_user)):
+    user_id = current_user["user_id"]
+    try:
+        response = index.fetch(ids=[user_id])
+        exists = user_id in response.get("vectors", {})
+        return {"exists": exists}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

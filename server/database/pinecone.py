@@ -29,3 +29,4 @@ def add_user_pinecone(user_id: str, username: str, text: str = "default user pro
             "metadata": {"username": username}
         }
     ])
+

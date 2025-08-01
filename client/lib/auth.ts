@@ -57,14 +57,16 @@ export const authOptions: NextAuthOptions = {
                 user: {
                     ...session.user,
                     username: token.username
-                }
+                },
+                accessToken: token.sub,
             }
         },
         async jwt({ token, user}) {
             if(user) {
                 return {
                     ...token,
-                    username: user.username
+                    username: user.username,
+                    sub: user.id, // Ensure the user ID is set as the subject
                 }
             }
             return token
