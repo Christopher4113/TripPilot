@@ -45,7 +45,7 @@ def check_user_exists(current_user: dict = Depends(get_current_user)):
     user_id = current_user["user_id"]
     try:
         response = index.fetch(ids=[user_id])
-        exists = user_id in response.get("vectors", {})
+        exists = user_id in response.vectors
         return {"exists": exists}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
