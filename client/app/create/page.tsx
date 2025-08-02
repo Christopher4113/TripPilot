@@ -301,7 +301,13 @@ const Page = () => {
                 Menu
               </Button>
             </Link>
-            <Button variant="outline" onClick={() => signOut()} className="text-red-600">
+            <Button 
+              variant="outline" 
+              onClick={async () => {
+                await fetch("/api/users/logout"); // Clear custom JWT
+                signOut(); // Then call NextAuth signOut
+              }} 
+              className="text-red-600">
               <LogOut className="h-4 w-4 mr-1" />
               Sign Out
             </Button>

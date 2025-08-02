@@ -11,7 +11,10 @@ export async function GET(req: NextRequest) {
   }
 
   const customToken = jwt.sign(
-    { sub: token.sub },
+    {   
+        sub: token.sub,
+        username: token.username || token.name,
+    },
     process.env.TOKEN_SECRET!, // Make sure this is set in .env
     { expiresIn: "7d" }
   );
