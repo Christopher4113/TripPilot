@@ -59,6 +59,18 @@ const Page = () => {
   const [isTyping, setIsTyping] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const hasShownInitialPromptRef = useRef(false)
+  useEffect(() => {
+    if (status === "authenticated") {
+      fetch("/api/set-token", {
+        method: "GET",
+        credentials: "include", // very important to include the cookie
+      }).then(res => {
+        if (!res.ok) {
+          console.error("Failed to set custom JWT cookie");
+        }
+      });
+    }
+  }, [status]);
 
   useEffect(() => {
     if (messagesEndRef.current) {

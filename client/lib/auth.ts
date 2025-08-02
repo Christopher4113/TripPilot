@@ -62,14 +62,11 @@ export const authOptions: NextAuthOptions = {
             }
         },
         async jwt({ token, user}) {
-            if(user) {
-                return {
-                    ...token,
-                    username: user.username,
-                    sub: user.id, // Ensure the user ID is set as the subject
-                }
+            if (user) {
+                token.sub = user.id; // Ensure sub is always the userId
+                token.username = user.username;
             }
-            return token
+            return token;
         }
     }
 }

@@ -5,10 +5,23 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Plane, Plus, BookmarkCheck, User, LogOut } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from 'next/navigation';
+import { useEffect } from "react";
 
 const Page = () => {
   const router = useRouter();
   const { data: session, status } = useSession()
+  useEffect(() => {
+    if (status === "authenticated") {
+      fetch("/api/set-token", {
+        method: "GET",
+        credentials: "include", // very important to include the cookie
+      }).then(res => {
+        if (!res.ok) {
+          console.error("Failed to set custom JWT cookie");
+        }
+      });
+    }
+  }, [status]);
   const handleSelect = (value: string) => {
     if (value === "create") {
       router.push("/create");
@@ -48,6 +61,7 @@ const Page = () => {
       </div>
     )
   }
+  
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-white to-gray-50">
