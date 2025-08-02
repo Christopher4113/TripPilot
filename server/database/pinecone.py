@@ -1,4 +1,18 @@
-def add_user_pinecone(user_id: str, username: str, index: str, text: str = "default user profile"):
+from pinecone import Pinecone
+from dotenv import load_dotenv
+
+load_dotenv()
+import os
+
+# CONFIGURATION
+PINECONE_API_KEY =  os.getenv("PINECONE_API_KEY")
+PINECONE_INDEX_NAME = os.getenv("PINECONE_INDEX_NAME")
+
+# Init client
+pc = Pinecone(api_key=PINECONE_API_KEY)
+index = pc.Index(PINECONE_INDEX_NAME)
+
+def add_user_pinecone(user_id: str, username: str, text: str = "default user profile"):
     """Add user to Pinecone index."""
     embed_response = pc.inference.embed(
         model="llama-text-embed-v2",
