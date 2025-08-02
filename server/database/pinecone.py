@@ -20,12 +20,10 @@ def add_user_pinecone(user_id: str, username: str, text: str = "default user pro
         parameters={"input_type": "query"}
     )
 
-    print("Embedding response:", embed_response)
-
-    if not embed_response.embeddings:
+    if not embed_response.data:
         raise ValueError("Embedding failed or returned empty result")
 
-    embedding = embed_response.embeddings[0].values
+    embedding = embed_response.data[0]["values"]
 
     index.upsert(vectors=[
         {
