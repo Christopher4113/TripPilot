@@ -49,3 +49,20 @@ def check_user_exists(current_user: dict = Depends(get_current_user)):
         return {"exists": exists}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/create_trip")
+def create_trip(trips: list, current_user: dict = Depends(get_current_user)):
+    user_id = current_user["user_id"]
+    
+    if not trips:
+        raise HTTPException(status_code=400, detail="No trips provided")
+    
+    try:
+        for trip in trips:
+            # Here you would typically process each trip and add it to your database
+            # For now, we just print it
+            print(f"Processing trip for user {user_id}: {trip}")
+        
+        return {"message": "Trips processed successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

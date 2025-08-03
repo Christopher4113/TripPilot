@@ -1,12 +1,13 @@
 "use client"
 import type React from "react"
 import { useState, useEffect, useRef } from "react"
-import { useSession, signOut, getSession } from "next-auth/react"
+import { useSession, signOut} from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Plane, LogOut, Menu, Send, User, Bot } from "lucide-react"
 import Link from "next/link"
 import axios from "axios"
+import Cookies from "js-cookie";
 
 interface Trip {
   destination: string
@@ -31,6 +32,7 @@ const steps = [
 ]
 
 const Page = () => {
+  const SERVER_URL = process.env.SERVER_URL
   const { status } = useSession()
   const messagesEndRef = useRef<HTMLDivElement | null>(null)
   const inputRef = useRef<HTMLInputElement | null>(null)
@@ -189,32 +191,35 @@ const Page = () => {
     setIsSubmitting(true)
 
     try {
-      const session = await getSession()
-      // @ts-expect-error: accessToken is a custom property added to the session
-      const token = session?.user?.accessToken;
+      const token = Cookies.get("token") || '';
 
       if (!token) {
         throw new Error("Authentication token not found");
       }
 
       // Step 1: Check if user exists in Pinecone
-      const checkRes = await axios.get('http://localhost:8000/check_user_exists', {
+      const checkRes = await axios.get(`${SERVER_URL}/check_user_exists`, {
         headers: {
+          "Content-Type": "application/json",
           Authorization: `Bearer ${token}`
         }
       })
 
       // Step 2: Register user if needed
       if (!checkRes.data?.exists) {
-        await axios.post('http://localhost:8000/register_pinecone_user', {}, {
+        await axios.post(`${SERVER_URL}/register_pinecone_user`, {}, {
           headers: {
+            "Content-Type": "application/json",
             Authorization: `Bearer ${token}`
           }
         })
       }
 
-      const response = await axios.post('http://localhost:8000', {
-        trips: allTrips
+      const response = await axios.post(`${SERVER_URL}/create_trip`, {trips: allTrips}, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        }
       })
 
       console.log("Trips submitted successfully:", response.data)
