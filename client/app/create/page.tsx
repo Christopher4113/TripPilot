@@ -32,7 +32,7 @@ const steps = [
 ]
 
 const Page = () => {
-  const SERVER_URL = process.env.SERVER_URL
+  const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL
   const { status } = useSession()
   const messagesEndRef = useRef<HTMLDivElement | null>(null)
   const inputRef = useRef<HTMLInputElement | null>(null)
@@ -192,6 +192,7 @@ const Page = () => {
 
     try {
       const token = Cookies.get("token") || '';
+      console.log("Token from cookie:", token);
 
       if (!token) {
         throw new Error("Authentication token not found");

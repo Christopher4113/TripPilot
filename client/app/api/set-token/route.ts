@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
   );
 
   const cookie = serialize("token", customToken, {
-    httpOnly: true,
+    httpOnly: false,
     path: "/",
     maxAge: 60 * 60 * 24 * 7,
     secure: process.env.NODE_ENV === "production",

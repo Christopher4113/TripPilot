@@ -32,3 +32,14 @@ def add_user_pinecone(user_id: str, username: str, text: str = "default user pro
             "metadata": {"username": username}
         }
     ])
+
+def get_context_from_pinecone(user_id: str):
+    """Fetch user context from Pinecone index."""
+    try:
+        response = index.fetch(ids=[user_id])
+        if user_id in response.vectors:
+            return response.vectors[user_id].metadata
+        else:
+            return None
+    except Exception as e:
+        raise ValueError(f"Error fetching user context: {str(e)}")
