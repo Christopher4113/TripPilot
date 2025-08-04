@@ -16,12 +16,25 @@ llm = ChatGoogleGenerativeAI(
     api_key=GOOGLE_API_KEY
 )
 
-prompt = PromptTemplate(
-    input_variables=["user_id", "username", "text"],
-    template="Explain the concept of {text} in simple terms."
-)
+template = """You are a travel planner AI. Based on the following trip details, create a short day-by-day plan including activities, estimated budget usage, and how to best accommodate the user's interests and accessibility needs. Make sure all of the hotels, activities, resturaunts and transportation total is within the budget constraints.
+The User cannot spend more than the budget provided.
 
+Destination: {destination}
+Budget: {budget}
+Dates: {startDate} to {endDate}
+Travelers: {travelers}
+Accessibility: {accessibility}
+Interests: {interests}
+Notes: {notes}
+
+Output a friendly but structured travel plan:"""
+
+prompt = PromptTemplate(
+    input_variables=["destination", "budget", "startDate", "endDate", "travelers", "accessibility", "interests", "notes"],
+    template=template
+)
 chain = LLMChain(llm=llm, prompt=prompt)
 
-output = chain.run("12345", "john_doe", "quantum computing")
-print(output)
+
+def generate_travel_plan(trip: dict) -> str:
+    return chain.run(**trip)

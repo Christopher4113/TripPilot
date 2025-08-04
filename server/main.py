@@ -2,6 +2,7 @@ from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from helpers.extractToken import get_current_user
 from database.pinecone import add_user_pinecone, index
+from helpers.agent import generate_travel_plan
 from pydantic import BaseModel
 
 app = FastAPI()
@@ -72,11 +73,19 @@ def create_trip(payload: TripList, current_user: dict = Depends(get_current_user
         raise HTTPException(status_code=400, detail="No trips provided")
 
     try:
+        trip_plans = []
         print(f"Received {len(payload.trips)} trip(s) from user {user_id}")
         for i, trip in enumerate(payload.trips):
-            print(f"Trip {i+1}: {trip.dict()}")
-            # Here you'd typically save to a DB
+            trip_dict = trip.dict()
+            print(f"Trip {i+1}: {trip_dict}")
 
-        return {"message": "Trips processed successfully"}
+            # Call Gemini LLM to generate a plan
+            plan = generate_travel_plan(trip_dict)
+            trip_plans.append({
+                "trip": trip_dict,
+                "plan": plan
+            })
+
+        return {"message": "Trips processed successfully", "plans": trip_plans}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
