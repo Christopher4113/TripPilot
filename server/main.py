@@ -2,6 +2,7 @@ from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from helpers.extractToken import get_current_user
 from database.pinecone import add_user_pinecone, index
+from pydantic import BaseModel
 
 app = FastAPI()
 origins = [
@@ -16,6 +17,19 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+class Trip(BaseModel):
+    destination: str
+    budget: str
+    startDate: str
+    endDate: str
+    travelers: str
+    accessibility: str
+    interests: str
+    notes: str
+
+class TripList(BaseModel):
+    trips: list[Trip]
 
 @app.get("/")
 async def read_root():
@@ -51,18 +65,18 @@ def check_user_exists(current_user: dict = Depends(get_current_user)):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/create_trip")
-def create_trip(trips: list, current_user: dict = Depends(get_current_user)):
+def create_trip(payload: TripList, current_user: dict = Depends(get_current_user)):
     user_id = current_user["user_id"]
     
-    if not trips:
+    if not payload.trips:
         raise HTTPException(status_code=400, detail="No trips provided")
-    
+
     try:
-        for trip in trips:
-            # Here you would typically process each trip and add it to your database
-            # For now, we just print it
-            print(f"Processing trip for user {user_id}: {trip}")
-        
+        print(f"Received {len(payload.trips)} trip(s) from user {user_id}")
+        for i, trip in enumerate(payload.trips):
+            print(f"Trip {i+1}: {trip.dict()}")
+            # Here you'd typically save to a DB
+
         return {"message": "Trips processed successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

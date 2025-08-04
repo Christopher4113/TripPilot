@@ -23,8 +23,8 @@ interface Trip {
 const steps = [
   { field: "destination", prompt: "Where would you like to go?" },
   { field: "budget", prompt: "What's your budget for this trip?" },
-  { field: "startDate", prompt: "When will the trip start? (YYYY-MM-DD)" },
-  { field: "endDate", prompt: "When will the trip end? (YYYY-MM-DD)" },
+  { field: "startDate", prompt: "When will the trip start?" },
+  { field: "endDate", prompt: "When will the trip end?" },
   { field: "travelers", prompt: "How many people are traveling?" },
   { field: "accessibility", prompt: "Do you have any accessibility needs?" },
   { field: "interests", prompt: "What type of activities or experiences interest you?" },
