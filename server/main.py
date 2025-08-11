@@ -85,6 +85,7 @@ def create_trip(payload: TripList, current_user: dict = Depends(get_current_user
                 "trip": trip_dict,
                 "plan": plan
             })
+            print(f"Generated plan for trip {i+1}: {plan}")
 
         return {"message": "Trips processed successfully", "plans": trip_plans}
     except Exception as e:

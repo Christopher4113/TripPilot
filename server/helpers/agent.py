@@ -4,6 +4,7 @@ from langchain.prompts import PromptTemplate
 from dotenv import load_dotenv
 import os
 import json
+import re
 
 # Load environment variables
 load_dotenv()
@@ -17,8 +18,11 @@ llm = ChatGoogleGenerativeAI(
     api_key=GOOGLE_API_KEY
 )
 
-# --- Step 1: Breakdown Prompt (Simplified) ---
-breakdown_template = """You are a travel planning assistant. Given the user's trip details, break the trip down into exactly 4 components in JSON format.
+# --- Step 1: Breakdown -> API Query Builder ---
+# Return concise, keyword-focused queries that your code can drop into each API.
+# Provide 2-4 variants per API to increase hit rate. No prose, only JSON.
+breakdown_template = """You are a travel planning assistant. Convert the user's trip details into API-ready search queries.
+Queries must be short (<=120 chars), keyword-rich, and include location and date range. No extra commentary.
 
 Trip Details:
 - Destination: {destination}
@@ -29,90 +33,100 @@ Trip Details:
 - Interests: {interests}
 - Notes: {notes}
 
-Return ONLY this JSON format (no other text):
+Derive:
+- guests = number of people from "Travelers"
+- date range = ISO dates as given
+- price hints: if possible infer a per-night cap for lodging and "budget"/"cheap"/"midrange" keywords for activities/food
+- include neighborhoods/landmarks if user mentions them
+- include accessibility hints (e.g., "wheelchair accessible") when relevant
+
+Return ONLY this JSON (no other text, no trailing commas):
 {{
-  "lodging": "brief lodging recommendation",
-  "transportation": "brief transportation advice", 
-  "activities": "brief activity suggestions",
-  "food": "brief food recommendations"
-}}"""
+  "lodging": {{
+    "airbnb": [
+      "Destination + area + dates + guests + price cap/night + must-haves (wifi, kitchen, etc.)",
+      "another variant..."
+    ]
+  }},
+  "transportation": {{
+    "public_transit": [
+      "city transit passes or route queries within dates, include zones/airport if mentioned"
+    ],
+    "uber": [
+      "city airport->downtown within dates, passengers, time window keywords"
+    ],
+    "car_rental": [
+      "city car rental dates + pickup/dropoff + class (economy) + drivers age if implied"
+    ]
+  }},
+  "activities": {{
+    "eventbrite": [
+      "city + interests + date range + free/paid keyword if budget constrained"
+    ],
+    "tripadvisor": [
+      "city top attractions + interests + half-day/full-day + cheap/midrange"
+    ]
+  }},
+  "food": {{
+    "yelp": [
+      "city + cuisine + neighborhood/landmark + price tier + open now if relevant"
+    ]
+  }}
+}}
+
+Fill the arrays with 2-4 concrete query strings each, customized from the Trip Details.
+Use compact keywords and symbols where helpful (e.g., 2 guests, $150/night). No explanations, only JSON.
+"""
 
 breakdown_prompt = PromptTemplate(
-    input_variables=["destination", "budget", "startDate", "endDate", "travelers", "accessibility", "interests", "notes"],
+    input_variables=[
+        "destination", "budget", "startDate", "endDate",
+        "travelers", "accessibility", "interests", "notes"
+    ],
     template=breakdown_template
 )
 breakdown_chain = breakdown_prompt | llm
 
-# --- Step 2: Final Plan Prompt ---
-plan_template = """Create a day-by-day travel itinerary based on this breakdown:
-
-Lodging: {lodging}
-Transportation: {transportation}
-Activities: {activities}
-Food: {food}
-
-Trip Details:
-- Budget: {budget}
-- Dates: {startDate} to {endDate}
-- Travelers: {travelers}
-
-Create a friendly, structured day-by-day plan within the budget."""
-
-plan_prompt = PromptTemplate(
-    input_variables=["lodging", "transportation", "activities", "food", "budget", "startDate", "endDate", "travelers"],
-    template=plan_template
-)
-plan_chain = plan_prompt | llm
-
-# --- Step 3: Improved Orchestration Functions ---
-def breakdown_trip(trip: dict) -> dict:
+def breakdown_trip_to_queries(trip: dict) -> dict:
     try:
         response = breakdown_chain.invoke(trip)
-        print("Breakdown response:", response)
-        
-        # Handle different response types
-        content = response.content if hasattr(response, 'content') else str(response)
-        
-        if not content or content.strip() == '':
+        content = response.content if hasattr(response, "content") else str(response)
+
+        if not content or content.strip() == "":
             raise ValueError("Empty response from breakdown_chain")
-        
-        # Try to extract JSON if there's extra text
+
         content = content.strip()
-        if not content.startswith('{'):
-            # Look for JSON in the response
-            import re
-            json_match = re.search(r'\{.*\}', content, re.DOTALL)
-            if json_match:
-                content = json_match.group(0)
-            else:
+        if not content.startswith("{"):
+            m = re.search(r"\{.*\}", content, re.DOTALL)
+            if not m:
                 raise ValueError("No JSON found in response")
-        
-        return json.loads(content)
+            content = m.group(0)
+
+        data = json.loads(content)
+
+        # Optional: light validation to ensure expected keys exist
+        required_top = ["lodging", "transportation", "activities", "food"]
+        for k in required_top:
+            if k not in data:
+                raise ValueError(f"Missing '{k}' in JSON")
+
+        # Ensure subkeys exist
+        _ = data["lodging"].get("airbnb", [])
+        t = data["transportation"]
+        _ = t.get("public_transit", []), t.get("uber", []), t.get("car_rental", [])
+        a = data["activities"]
+        _ = a.get("eventbrite", []), a.get("tripadvisor", [])
+        _ = data["food"].get("yelp", [])
+
+        return data
+
     except json.JSONDecodeError as e:
         print(f"JSON decode error: {e}")
         print(f"Response content: {content}")
         raise ValueError(f"Invalid JSON from breakdown_chain: {content}")
     except Exception as e:
         print(f"Breakdown error: {e}")
-        raise ValueError(f"Error in breakdown_trip: {e}")
+        raise ValueError(f"Error in breakdown_trip_to_queries: {e}")
 
-def generate_travel_plan(trip: dict) -> str:
-    try:
-        breakdown = breakdown_trip(trip)
-        response = plan_chain.invoke({
-            "lodging": breakdown["lodging"],
-            "transportation": breakdown["transportation"],
-            "activities": breakdown["activities"],
-            "food": breakdown["food"],
-            "budget": trip["budget"],
-            "startDate": trip["startDate"],
-            "endDate": trip["endDate"],
-            "travelers": trip["travelers"]
-        })
-        
-        # Handle different response types
-        final_plan = response.content if hasattr(response, 'content') else str(response)
-        return final_plan
-    except Exception as e:
-        print(f"Plan generation error: {e}")
-        raise RuntimeError(f"Failed to generate final plan. Error: {e}")
+def generate_travel_plan(trip: dict) -> dict:
+    return breakdown_trip_to_queries(trip)
