@@ -43,7 +43,7 @@ Derive:
 Return ONLY this JSON (no other text, no trailing commas):
 {{
   "lodging": {{
-    "airbnb": [
+    "Expedia": [
       "Destination + area + dates + guests + price cap/night + must-haves (wifi, kitchen, etc.)",
       "another variant..."
     ]
