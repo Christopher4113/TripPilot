@@ -36,7 +36,8 @@ Trip Details:
 Derive:
 - guests = number of people from "Travelers"
 - date range = ISO dates as given
-- price hints: if possible infer a per-night cap for lodging and "budget"/"cheap"/"midrange" keywords for activities/food
+- price hints: if possible infer a per-night cap for lodging and "budget"/"cheap"/"midrange" keywords for activities/food and for all the nights total to 1/4 of the budget
+- For Transportation: Determine if public transit, Uber, or car rental is needed based on destination and dates and only include the relevant ones. For example if the user mentions "airport" and "downtown" in the same sentence, include Uber queries.
 - include neighborhoods/landmarks if user mentions them
 - include accessibility hints (e.g., "wheelchair accessible") when relevant
 
