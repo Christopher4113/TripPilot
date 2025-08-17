@@ -21,6 +21,7 @@ app.add_middleware(
 
 class Trip(BaseModel):
     destination: str
+    departure: str
     budget: str
     startDate: str
     endDate: str

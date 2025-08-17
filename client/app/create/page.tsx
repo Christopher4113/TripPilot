@@ -11,6 +11,7 @@ import Cookies from "js-cookie";
 
 interface Trip {
   destination: string
+  departure: string
   budget: string
   startDate: string
   endDate: string
@@ -22,6 +23,7 @@ interface Trip {
 
 const steps = [
   { field: "destination", prompt: "Where would you like to go?" },
+  { field: "departure", prompt: "Where are you departing from?" },
   { field: "budget", prompt: "What's your budget for this trip?" },
   { field: "startDate", prompt: "When will the trip start?" },
   { field: "endDate", prompt: "When will the trip end?" },
@@ -40,6 +42,7 @@ const Page = () => {
   const [stepIndex, setStepIndex] = useState(0)
   const [tripData, setTripData] = useState<Trip>({
     destination: "",
+    departure: "",
     budget: "",
     startDate: "",
     endDate: "",
@@ -161,6 +164,7 @@ const Page = () => {
     setCurrentTrips((prev) => [...prev, tripData])
     setTripData({
       destination: "",
+      departure: "",
       budget: "",
       startDate: "",
       endDate: "",
@@ -250,6 +254,7 @@ const Page = () => {
       setIsSubmitting(false)
       setTripData({
         destination: "",
+        departure: "",
         budget: "",
         startDate: "",
         endDate: "",

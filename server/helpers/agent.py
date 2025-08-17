@@ -25,6 +25,7 @@ breakdown_template = """You are a travel planning assistant. Convert the user's 
 Queries must be short (<=120 chars), keyword-rich, and include location and date range. No extra commentary.
 
 Trip Details:
+- Departure: {departure}
 - Destination: {destination}
 - Budget: {budget}
 - Dates: {startDate} to {endDate}
@@ -36,6 +37,8 @@ Trip Details:
 Derive:
 - guests = number of people from "Travelers"
 - date range = ISO dates as given
+- city = main destination city
+- For the flights, assume economy class unless specified otherwise and make it round-trip and 1/4 of the total budget
 - price hints: if possible infer a per-night cap for lodging and "budget"/"cheap"/"midrange" keywords for activities/food and for all the nights total to 1/4 of the budget
 - For Transportation: Determine if public transit, Uber, or car rental is needed based on destination and dates and only include the relevant ones. For example if the user mentions "airport" and "downtown" in the same sentence, include Uber queries.
 - include neighborhoods/landmarks if user mentions them
@@ -43,6 +46,11 @@ Derive:
 
 Return ONLY this JSON (no other text, no trailing commas):
 {{
+  "flights": {{
+    "skyscanner": [
+      "origin->destination + dates + passengers + cabin class (economy) + non-stop/any"
+    ]
+  }}, 
   "lodging": {{
     "Expedia": [
       "Destination + area + dates + guests + price cap/night + must-haves (wifi, kitchen, etc.)",
