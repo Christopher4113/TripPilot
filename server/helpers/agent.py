@@ -114,12 +114,13 @@ def breakdown_trip_to_queries(trip: dict) -> dict:
         data = json.loads(content)
 
         # Optional: light validation to ensure expected keys exist
-        required_top = ["lodging", "transportation", "activities", "food"]
+        required_top = ["flights","lodging", "transportation", "activities", "food"]
         for k in required_top:
             if k not in data:
                 raise ValueError(f"Missing '{k}' in JSON")
 
         # Ensure subkeys exist
+        _ = data["flights"].get("skyscanner", [])
         _ = data["lodging"].get("airbnb", [])
         t = data["transportation"]
         _ = t.get("public_transit", []), t.get("uber", []), t.get("car_rental", [])
