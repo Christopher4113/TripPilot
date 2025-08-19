@@ -47,7 +47,7 @@ Derive:
 Return ONLY this JSON (no other text, no trailing commas):
 {{
   "flights": {{
-    "skyscanner": [
+    "serpapi": [
       "origin->destination + dates + passengers + cabin class (economy) + non-stop/any"
     ]
   }}, 

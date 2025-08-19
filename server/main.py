@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from helpers.extractToken import get_current_user
 from database.pinecone import add_user_pinecone, index
 from helpers.agent import generate_travel_plan
+from api.flights import search_best_flight_from_hint
 from pydantic import BaseModel
 
 app = FastAPI()
@@ -82,9 +83,37 @@ def create_trip(payload: TripList, current_user: dict = Depends(get_current_user
 
             # Call Gemini LLM to generate a plan
             plan = generate_travel_plan(trip_dict)
+            flight_hints = (
+                plan.get("flights", {})
+                    .get("serpapi", [])
+                or plan.get("flights", {}).get("serpapi", [])  # fallback if needed
+            )
+            if not flight_hints:
+                raise HTTPException(status_code=500, detail="LLM did not return a flights.serpapi hint")
+
+            # 3) Convert budget string like "$1200" or "1200 USD" to a float if you want the 1/4 rule
+            total_budget = None
+            try:
+                # very light parse
+                digits = "".join(ch for ch in trip_dict.get("budget", "") if ch.isdigit())
+                if digits:
+                    total_budget = float(digits)
+            except Exception:
+                pass
+
+            # 4) Hit SerpAPI & pick best flight
+            best_flight = search_best_flight_from_hint(
+                flight_hints[0],
+                total_budget_usd=total_budget,
+                currency="USD",  # or detect from user
+                gl="ca",
+                hl="en",
+            )
+
             trip_plans.append({
                 "trip": trip_dict,
-                "plan": plan
+                "plan": plan,
+                "flight": best_flight,  # <- your UI can show price, legs, duration, etc.
             })
             print(f"Generated plan for trip {i+1}: {plan}")
 
