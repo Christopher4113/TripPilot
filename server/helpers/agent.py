@@ -36,7 +36,7 @@ Trip Details:
 
 Derive:
 - guests = number of people from "Travelers"
-- date range = ISO dates as given
+- date range = ISO dates as given: Make sure the dates are in ISO format (YYYY-MM-DD)
 - city = main destination city
 - For the flights, assume economy class unless specified otherwise and make it round-trip and 1/4 of the total budget
 - price hints: if possible infer a per-night cap for lodging and "budget"/"cheap"/"midrange" keywords for activities/food and for all the nights total to 1/4 of the budget
@@ -89,7 +89,7 @@ Use compact keywords and symbols where helpful (e.g., 2 guests, $150/night). No 
 
 breakdown_prompt = PromptTemplate(
     input_variables=[
-        "destination", "budget", "startDate", "endDate",
+        "departure", "destination", "budget", "startDate", "endDate",
         "travelers", "accessibility", "interests", "notes"
     ],
     template=breakdown_template

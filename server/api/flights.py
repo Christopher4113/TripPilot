@@ -34,6 +34,7 @@ def _coalesce(*vals):
             return v
     return None
 
+
 def parse_flight_hint(hint: str) -> Dict[str, Any]:
     """
     Parse a compact LLM 'hint' like:
