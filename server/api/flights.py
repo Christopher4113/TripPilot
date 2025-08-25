@@ -4,8 +4,15 @@ import json
 import math
 import requests
 from typing import Any, Dict, List, Optional, Tuple
+from dotenv import load_dotenv
 
-SERPAPI_API_KEY = os.getenv("SERPAPI_API_KEY")
+def _get_serpapi_key() -> str:
+    # ensure .env is loaded and fetch fresh each call
+    load_dotenv()
+    key = os.getenv("SERPAPI_API_KEY")
+    if not key:
+        raise RuntimeError("Missing SERPAPI_API_KEY")
+    return key
 
 SERPAPI_SEARCH_URL = "https://serpapi.com/search.json"
 # Docs: engine=google_flights with fields like departure_id, arrival_id, outbound_date, return_date, adults, travel_class, stops, currency, sort_by, max_price, etc. :contentReference[oaicite:0]{index=0}
@@ -107,7 +114,8 @@ def _resolve_airport_id_if_needed(text: str) -> Optional[str]:
     if IATA_RE.fullmatch(text):
         return text
 
-    if not SERPAPI_API_KEY:
+    api_key = _get_serpapi_key()
+    if not api_key:
         return None  # can't resolve without key
 
     # Airports API: returns "airports" array with objects including airport.id (IATA) for departure/arrival. :contentReference[oaicite:1]{index=1}
@@ -116,7 +124,7 @@ def _resolve_airport_id_if_needed(text: str) -> Optional[str]:
             SERPAPI_SEARCH_URL,
             params={
                 "engine": "google_flights",
-                "api_key": SERPAPI_API_KEY,
+                "api_key": api_key,
                 "departure_id": text,
                 "arrival_id": text,  # trick: ask both; we'll take the first id we see
                 "output": "json",
@@ -143,12 +151,13 @@ def serpapi_flights(params: Dict[str, Any], currency: str = "USD", gl: str = "ca
     """
     Call SerpAPI Google Flights and return JSON.
     """
-    if not SERPAPI_API_KEY:
+    api_key = _get_serpapi_key()
+    if not api_key:
         raise RuntimeError("Missing SERPAPI_API_KEY")
 
     q = {
         "engine": "google_flights",
-        "api_key": SERPAPI_API_KEY,
+        "api_key": api_key,
         "departure_id": params["origin"],
         "arrival_id": params["dest"],
         "outbound_date": params["outbound_date"],
