@@ -2,7 +2,7 @@ from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from helpers.extractToken import get_current_user
 from database.pinecone import add_user_pinecone, index
-from helpers.agent import generate_travel_plan
+from helpers.agent import generate_travel_plan, test_llm_connection
 from api.flights import search_best_flight_from_hint
 from pydantic import BaseModel
 
@@ -37,6 +37,15 @@ class TripList(BaseModel):
 @app.get("/")
 async def read_root():
     return {"message": "Hello, FastAPI"}
+
+@app.get("/test_llm")
+async def test_llm():
+    """Test endpoint to check if the LLM is working"""
+    try:
+        success = test_llm_connection()
+        return {"success": success, "message": "LLM test completed"}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
 
 
 @app.get("/me")
@@ -82,7 +91,9 @@ def create_trip(payload: TripList, current_user: dict = Depends(get_current_user
             print(f"Trip {i+1}: {trip_dict}")
 
             # Call Gemini LLM to generate a plan
+            print(f"[create_trip] Generating plan for trip {i+1}...")
             plan = generate_travel_plan(trip_dict)
+            print(f"[create_trip] Plan generated successfully for trip {i+1}")
             flight_hints = (
                 plan.get("flights", {})
                     .get("serpapi", [])
@@ -119,4 +130,7 @@ def create_trip(payload: TripList, current_user: dict = Depends(get_current_user
 
         return {"message": "Trips processed successfully", "plans": trip_plans}
     except Exception as e:
+        import traceback
+        print("[create_trip] EXCEPTION:", repr(e))
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
