@@ -1,9 +1,11 @@
+from datetime import datetime
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from helpers.extractToken import get_current_user
 from database.pinecone import add_user_pinecone, index
 from helpers.agent import generate_travel_plan, test_llm_connection
 from api.flights import search_best_flight_from_hint
+from api.lodging import search_best_lodging_from_hint
 from pydantic import BaseModel
 
 app = FastAPI()
@@ -121,10 +123,32 @@ def create_trip(payload: TripList, current_user: dict = Depends(get_current_user
                 hl="en",
             )
 
+            lodging_hints = plan.get("lodging", {}).get("Expedia", [])  # LLM emits this string; we just reuse it
+            if lodging_hints:
+                # Optional “budget heuristic”: ~1/3 of total / nights
+                per_night_cap = None
+                if total_budget and plan.get("_meta"):
+                    try:
+                        s = plan["_meta"]["startISO"]; e = plan["_meta"]["endISO"]
+                        nights = max(1, (datetime.strptime(e, "%Y-%m-%d") - datetime.strptime(s, "%Y-%m-%d")).days)
+                        per_night_cap = (total_budget / 3.0) / nights
+                    except Exception:
+                        pass
+
+                best_lodging = search_best_lodging_from_hint(
+                    lodging_hints[0],
+                    currency="USD",
+                    max_price_per_night=per_night_cap,  # or None
+                    min_rating=3.0,                      # tweak as you like
+                )
+            else:
+                best_lodging = None
+
             trip_plans.append({
                 "trip": trip_dict,
                 "plan": plan,
                 "flight": best_flight,  # <- your UI can show price, legs, duration, etc.
+                "lodging": best_lodging, # <- your UI can show hotel name, price, rating, etc.
             })
             print(f"Generated plan for trip {i+1}: {plan}")
 
