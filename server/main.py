@@ -5,7 +5,7 @@ from helpers.extractToken import get_current_user
 from database.pinecone import add_user_pinecone, index
 from helpers.agent import generate_travel_plan, test_llm_connection
 from api.flights import search_best_flight_from_hint
-from api.lodging import search_best_lodging_from_hint
+from api.lodging import search_best_lodging_from_hint_serpapi
 from pydantic import BaseModel
 
 app = FastAPI()
@@ -68,6 +68,15 @@ def register_user_in_pinecone(current_user: dict = Depends(get_current_user)):
     add_user_pinecone(user_id=user_id, username=username, text=default_text)
     return {"message": f"User {username} registered in Pinecone with ID {user_id}"}
 
+# main.py
+@app.get("/test_lodging_serpapi")
+def test_lodging_serpapi():
+    return search_best_lodging_from_hint_serpapi(
+        "MAD hotels 2025-10-01 to 2025-10-08 2 guests 1250 total find the best hotel",
+        gl="ca", hl="en", currency_default="EUR"  # override as you prefer
+    )
+
+
 @app.get("/check_user_exists")
 def check_user_exists(current_user: dict = Depends(get_current_user)):
     user_id = current_user["user_id"]
@@ -77,6 +86,8 @@ def check_user_exists(current_user: dict = Depends(get_current_user)):
         return {"exists": exists}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
 
 @app.post("/create_trip")
 def create_trip(payload: TripList, current_user: dict = Depends(get_current_user)):
@@ -123,32 +134,16 @@ def create_trip(payload: TripList, current_user: dict = Depends(get_current_user
                 hl="en",
             )
 
-            lodging_hints = plan.get("lodging", {}).get("Expedia", [])  # LLM emits this string; we just reuse it
+            lodging_hints = plan.get("lodging", {}).get("Expedia", [])
+            best_lodging = None
             if lodging_hints:
-                # Optional “budget heuristic”: ~1/3 of total / nights
-                per_night_cap = None
-                if total_budget and plan.get("_meta"):
-                    try:
-                        s = plan["_meta"]["startISO"]; e = plan["_meta"]["endISO"]
-                        nights = max(1, (datetime.strptime(e, "%Y-%m-%d") - datetime.strptime(s, "%Y-%m-%d")).days)
-                        per_night_cap = (total_budget / 3.0) / nights
-                    except Exception:
-                        pass
-
-                best_lodging = search_best_lodging_from_hint(
-                    lodging_hints[0],
-                    currency="USD",
-                    max_price_per_night=per_night_cap,  # or None
-                    min_rating=3.0,                      # tweak as you like
-                )
-            else:
-                best_lodging = None
+                best_lodging = search_best_lodging_from_hint_serpapi(lodging_hints[0], gl="ca", hl="en")
 
             trip_plans.append({
                 "trip": trip_dict,
                 "plan": plan,
                 "flight": best_flight,  # <- your UI can show price, legs, duration, etc.
-                "lodging": best_lodging, # <- your UI can show hotel name, price, rating, etc.
+                "lodging": best_lodging,
             })
             print(f"Generated plan for trip {i+1}: {plan}")
 

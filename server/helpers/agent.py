@@ -69,6 +69,7 @@ Generate search queries for:
 2. Lodging: Hotels in destination
 3. Activities: Based on interests
 
+
 CRITICAL: For flights, you MUST convert city names to IATA airport codes. Here are the most common conversions:
 
 Major US Cities:
@@ -112,6 +113,10 @@ Major International Cities:
 - Belfast Northern Ireland → BFS
 - Cork Ireland → ORK
 
+CRITICAL FOR LODGING: 
+- Make sure the budget is 1/4 of the total trip budget
+- ALWAYS convert city names to IATA codes FOR THE DESTINATION CITY
+
 IMPORTANT: 
 1. ALWAYS convert city names to IATA codes for flights
 2. Use the exact format: "IATA_CODE -> IATA_CODE"
@@ -126,7 +131,7 @@ Return ONLY valid JSON in this exact format:
   }},
   "lodging": {{
     "Expedia": [
-      "{destination} hotels {startISO} to {endISO} {travelers} guests"
+      "IATA_CODE hotels {startISO} to {endISO} {travelers} guests budget/4 total"
     ]
   }},
   "transportation": {{
